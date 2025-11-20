@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horta Inteligente - Gráficos</title>
-
+    <title>Horta Inteligente - Dashboard</title>
+    
     <!-- Auto-refresh -->
     <meta http-equiv="refresh" content="5">
 
@@ -12,72 +12,99 @@
         body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f0f2f5;
         }
 
+        /* CABEÇALHO FIXO */
         header {
-            background: #4CAF50;
-            padding: 18px;
-            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #2e7d32;
             color: white;
+            padding: 18px 0;
+            text-align: center;
             font-size: 22px;
             font-weight: bold;
+            z-index: 100;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
 
-        /* GRID RESPONSIVO */
-        .grid {
-            display: grid;
-            gap: 20px;
+        /* Espaço para não ficar atrás do cabeçalho */
+        .spacer {
+            height: 80px;
+        }
+
+        /* DASHBOARD (mobile first) */
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
             padding: 20px;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         }
 
-        /* CARD DOS GRÁFICOS */
+        /* CARD GRANDE */
         .card {
             background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 18px;
+            border-radius: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .card h2 {
             margin-top: 0;
+            font-size: 22px;
             text-align: center;
-            font-size: 20px;
             color: #333;
         }
 
         iframe {
             width: 100%;
-            height: 330px;
+            height: 350px;
             border: none;
+            border-radius: 12px;
+        }
+
+        /* TELAS GRANDES (tablet/PC) */
+        @media (min-width: 900px) {
+            .dashboard {
+                max-width: 1100px;
+                margin: auto;
+            }
+
+            .card iframe {
+                height: 400px;
+            }
         }
     </style>
 </head>
 <body>
 
 <header>
-    Horta Inteligente – Monitoramento em Tempo Real
+    Horta Inteligente – Dashboard
 </header>
 
-<div class="grid">
+<div class="spacer"></div>
 
-    <!-- Temperatura -->
+<div class="dashboard">
+
+    <!-- TEMPERATURA -->
     <div class="card">
-        <h2>Temperatura</h2>
+        <h2>Temperatura Ambiente</h2>
         <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1587001746&format=interactive"></iframe>
     </div>
 
-    <!-- Umidade -->
+    <!-- UMIDADE -->
     <div class="card">
-        <h2>Umidade</h2>
+        <h2>Umidade do Solo</h2>
         <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1798809069&format=interactive"></iframe>
     </div>
 
     <!-- LDR -->
     <div class="card">
-        <h2>Intensidade Luminosa (LDR)</h2>
+        <h2>Luz Ambiente (LDR)</h2>
         <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1324451117&format=interactive"></iframe>
     </div>
 
