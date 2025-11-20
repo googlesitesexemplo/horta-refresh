@@ -1,126 +1,188 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard – Horta IoT</title>
+  <meta charset="utf-8" />
+  <title>Dashboard – Horta Inteligente (corrigido)</title>
 
-    <script src="https://www.gstatic.com/charts/loader.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-    <style>
-        body {
-            background: #eef1f5;
-            font-family: Arial, sans-serif;
-            padding: 10px;
-        }
-        h2 {
-            margin: 0;
-            text-align: center;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit,minmax(420px,1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .card {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 0 8px rgba(0,0,0,0.1);
-        }
-        .chart {
-            width: 100%;
-            height: 300px;
-        }
-    </style>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <style>
+    body { font-family: "Segoe UI", Roboto, Arial, sans-serif; margin:0; background:#f3f6f9; color:#222; }
+    header { background:#21683a; color:white; padding:18px 12px; text-align:center; font-size:1.6rem; }
+    .wrap { max-width:1200px; margin:24px auto; padding:0 12px; }
+    .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
+    @media(max-width:860px){ .grid { grid-template-columns:1fr } }
+    .card { background:white; border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+    .card h2 { margin:0 0 8px; text-align:center; font-size:1.25rem; }
+    .chart { width:100%; height:360px; }
+    .footer-line { text-align:center; margin-top:8px; color:#666; font-size:0.95rem; }
+    .small { font-size:0.9rem; color:#555; }
+  </style>
 </head>
 <body>
+  <header>Dashboard – Horta Inteligente (corrigido)</header>
 
-<h1 style="text-align:center;">Dashboard – Horta Inteligente</h1>
-
-<div class="grid">
-    <div class="card">
+  <div class="wrap">
+    <div class="grid">
+      <div class="card">
         <h2>Temperatura (°C)</h2>
         <div id="chart_temp" class="chart"></div>
-    </div>
+        <div id="last_temp" class="footer-line small">Último: —</div>
+      </div>
 
-    <div class="card">
+      <div class="card">
         <h2>Umidade do Solo</h2>
         <div id="chart_umid" class="chart"></div>
-    </div>
+        <div id="last_umid" class="footer-line small">Último: —</div>
+      </div>
 
-    <div class="card">
+      <div class="card" style="grid-column: 1 / -1;">
         <h2>LDR (Luminosidade)</h2>
         <div id="chart_ldr" class="chart"></div>
+        <div id="last_ldr" class="footer-line small">Último: —</div>
+      </div>
     </div>
-</div>
+  </div>
 
 <script>
-google.charts.load("current", { packages: ["corechart"] });
-google.charts.setOnLoadCallback(init);
+/*
+  Versão robusta:
+  - Lê CSV público do Google Sheets
+  - Filtra linhas inválidas
+  - Converte números com vírgula
+  - Ordena por DateTime
+  - Desenha últimos N pontos (configurável)
+*/
 
-let tempChart, umidChart, ldrChart;
-let tempData, umidData, ldrData;
+google.charts.load('current', {packages:['corechart']});
+google.charts.setOnLoadCallback(main);
 
-async function init() {
-    tempChart = new google.visualization.LineChart(document.getElementById("chart_temp"));
-    umidChart = new google.visualization.LineChart(document.getElementById("chart_umid"));
-    ldrChart = new google.visualization.LineChart(document.getElementById("chart_ldr"));
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pub?gid=1104825372&single=true&output=csv";
+// se o seu link for diferente, substitua a constante acima.
 
-    tempData = new google.visualization.DataTable();
-    tempData.addColumn("datetime", "Tempo");
-    tempData.addColumn("number", "Temperatura");
+const MAX_POINTS = 60;      // últimos N pontos mostrados
+const POLL_MS = 4000;       // intervalo de atualização (recomendo 4s-8s pela latência do Sheets)
 
-    umidData = new google.visualization.DataTable();
-    umidData.addColumn("datetime", "Tempo");
-    umidData.addColumn("number", "Umidade");
+let charts = {};
+let options = {
+  legend: { position: 'none' },
+  curveType: 'none', // LINHA RETA
+  chartArea: { left: 60, top: 20, right: 20, bottom: 70 },
+  hAxis: { format: 'HH:mm:ss', textStyle: { fontSize: 11 } },
+  vAxis: { textStyle: { fontSize: 11 } },
+  animation: { duration: 300, easing: 'linear' }
+};
 
-    ldrData = new google.visualization.DataTable();
-    ldrData.addColumn("datetime", "Tempo");
-    ldrData.addColumn("number", "LDR");
+function main(){
+  charts.temp = new google.visualization.LineChart(document.getElementById('chart_temp'));
+  charts.umid = new google.visualization.LineChart(document.getElementById('chart_umid'));
+  charts.ldr  = new google.visualization.LineChart(document.getElementById('chart_ldr'));
 
-    await updateData();
-    setInterval(updateData, 2000); // Atualiza a cada 2 segundos (rápido)
+  // primeira carga
+  fetchAndDraw();
+  // atualizações periódicas
+  setInterval(fetchAndDraw, POLL_MS);
 }
 
-async function updateData() {
-    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pub?gid=1104825372&single=true&output=csv";
-    const csv = await (await fetch(url)).text();
-    const rows = Papa.parse(csv, { header: true }).data;
+async function fetchAndDraw(){
+  try{
+    const resp = await fetch(SHEET_CSV_URL, {cache: "no-store"});
+    const csv = await resp.text();
 
-    let last = rows[rows.length - 2];
+    const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
 
-    const t = new Date(last.DateTime);
-    const temp = parseFloat(last.Temperatura.replace(",", "."));
-    const umid = parseFloat(last.Umidade.replace(",", "."));
-    const ldr = parseFloat(last.LDR.replace(",", "."));
+    // Filtrar e normalizar
+    const normalized = parsed
+      .map(row => {
+        // ajustar nomes de colunas conforme sua planilha exata.
+        return {
+          DateTime: (row.DateTime || row['DateTime'] || row['Date/time'] || row['Data/Hora'] || "").trim(),
+          Temperatura: (row.Temperatura || row['Temperatura'] || row.Temp || "").toString().trim(),
+          Umidade: (row.Umidade || row['Umidade'] || row.Humidity || "").toString().trim(),
+          LDR: (row.LDR || row['LDR'] || row.Ldr || row.Light || "").toString().trim()
+        };
+      })
+      .filter(r => r.DateTime) // remove linhas sem data
+      .map(r => {
+        // tenta converter data — Google Sheets costuma enviar no formato ISO ou "YYYY-MM-DD HH:MM:SS"
+        const dt = new Date(r.DateTime);
+        return {
+          dt: isNaN(dt.getTime()) ? null : dt,
+          temp: safeParseFloat(r.Temperatura),
+          umid: safeParseFloat(r.Umidade),
+          ldr: safeParseFloat(r.LDR)
+        };
+      })
+      .filter(r => r.dt); // remover linhas com data inválida
 
-    appendPoint(tempData, t, temp);
-    appendPoint(umidData, t, umid);
-    appendPoint(ldrData, t, ldr);
-
-    drawCharts();
-}
-
-function appendPoint(table, time, value) {
-    table.addRow([time, value]);
-
-    if (table.getNumberOfRows() > 60) {
-        table.removeRow(0);
+    if(normalized.length === 0){
+      console.warn("Nenhuma linha válida encontrada no CSV.");
+      return;
     }
+
+    // Ordena (do mais antigo para o mais novo)
+    normalized.sort((a,b) => a.dt - b.dt);
+
+    // Pega apenas os últimos MAX_POINTS pontos
+    const lastN = normalized.slice(-MAX_POINTS);
+
+    // Cria DataTables e popula
+    const tempDT = new google.visualization.DataTable();
+    tempDT.addColumn('datetime','Tempo');
+    tempDT.addColumn('number','Temperatura');
+
+    const umidDT = new google.visualization.DataTable();
+    umidDT.addColumn('datetime','Tempo');
+    umidDT.addColumn('number','Umidade');
+
+    const ldrDT = new google.visualization.DataTable();
+    ldrDT.addColumn('datetime','Tempo');
+    ldrDT.addColumn('number','LDR');
+
+    lastN.forEach(r => {
+      if(!isNaN(r.temp)) tempDT.addRow([r.dt, r.temp]);
+      if(!isNaN(r.umid)) umidDT.addRow([r.dt, r.umid]);
+      if(!isNaN(r.ldr))  ldrDT.addRow([r.dt, r.ldr]);
+    });
+
+    // Atualiza "Último"
+    const last = lastN[lastN.length - 1];
+    if(last){
+      document.getElementById('last_temp').innerText = `Último: ${isNaN(last.temp) ? '—' : last.temp} — ${formatDateTime(last.dt)}`;
+      document.getElementById('last_umid').innerText = `Último: ${isNaN(last.umid) ? '—' : last.umid} — ${formatDateTime(last.dt)}`;
+      document.getElementById('last_ldr').innerText  = `Último: ${isNaN(last.ldr)  ? '—' : last.ldr}  — ${formatDateTime(last.dt)}`;
+    }
+
+    // Ajustes por gráfico: auto-range vertical mais agradável
+    const optsTemp = Object.assign({}, options, { vAxis: { viewWindowMode: 'pretty' } });
+    const optsUmid = Object.assign({}, options, { vAxis: { viewWindowMode: 'pretty' } });
+    const optsLdr  = Object.assign({}, options, { vAxis: { viewWindowMode: 'pretty' } });
+
+    charts.temp.draw(tempDT, optsTemp);
+    charts.umid.draw(umidDT, optsUmid);
+    charts.ldr.draw(ldrDT, optsLdr);
+
+  } catch(err){
+    console.error("Erro ao buscar/parsear CSV:", err);
+  }
 }
 
-function drawCharts() {
-    const opts = {
-        legend: { position: "none" },
-        curveType: "none", // LINHA RETA
-        chartArea: { left: 40, right: 20, top: 10, bottom: 30 }
-    };
+function safeParseFloat(s){
+  if(s === null || s === undefined) return NaN;
+  const str = s.toString().replace(/\s/g,'').replace(',', '.');
+  const n = parseFloat(str);
+  return isNaN(n) ? NaN : n;
+}
 
-    tempChart.draw(tempData, opts);
-    umidChart.draw(umidData, opts);
-    ldrChart.draw(ldrData, opts);
+function formatDateTime(dt){
+  if(!dt) return '';
+  const hh = String(dt.getHours()).padStart(2,'0');
+  const mm = String(dt.getMinutes()).padStart(2,'0');
+  const ss = String(dt.getSeconds()).padStart(2,'0');
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${hh}:${mm}:${ss}`;
 }
 </script>
 
