@@ -1,48 +1,70 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="60">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horta Inteligente - Auto Refresh</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horta Inteligente - Auto Refresh</title>
 
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f2f2f2;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: Arial, sans-serif;
-    }
+    <!-- AUTO-REFRESH A CADA 60s -->
+    <meta http-equiv="refresh" content="60">
 
-    iframe {
-      border: none;
-      width: 100vw;
-      height: 100vh;
-    }
-
-    .notice {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: rgba(255,255,255,0.9);
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 14px;
-      color: #333;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-  </style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f2f2f2;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 520px;
+        }
+        iframe {
+            width: 100%;
+            height: 330px;
+            border: 0;
+        }
+    </style>
 </head>
 <body>
-  <div class="notice">Auto-refresh a cada 60s. Se precisar alterar, edite <code>index.html</code>.</div>
-  <iframe 
-      src="https://sites.google.com/view/hostainteligente/in%C3%ADcio" 
-      allowfullscreen>
-  </iframe>
+
+    <h1>Horta Inteligente — Atualização Automática</h1>
+    <p style="text-align:center;">Os gráficos atualizam automaticamente a cada 60 segundos.</p>
+
+    <div class="container">
+
+        <!-- TEMPERATURA -->
+        <div class="card">
+            <h2>Temperatura</h2>
+            <iframe seamless scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1587001746&amp;format=interactive"></iframe>
+        </div>
+
+        <!-- UMIDADE -->
+        <div class="card">
+            <h2>Umidade</h2>
+            <iframe seamless scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1798809069&amp;format=interactive"></iframe>
+        </div>
+
+        <!-- LUMINOSIDADE (LDR) -->
+        <div class="card">
+            <h2>Luminosidade (LDR)</h2>
+            <iframe seamless scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1324451117&amp;format=interactive"></iframe>
+        </div>
+
+    </div>
+
 </body>
 </html>
