@@ -3,112 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horta Inteligente - Dashboard</title>
-    
-    <!-- Auto-refresh -->
-    <meta http-equiv="refresh" content="5">
+    <title>Horta Inteligente – Dashboard</title>
+
+    <!-- Google Charts -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
     <style>
         body {
             margin: 0;
-            padding: 0;
             font-family: "Segoe UI", Arial, sans-serif;
-            background: #f0f2f5;
+            background: #f2f5f9;
         }
 
-        /* CABEÇALHO FIXO */
         header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: #2e7d32;
+            background: #1b5e20;
+            padding: 20px;
             color: white;
-            padding: 18px 0;
+            font-size: 26px;
             text-align: center;
-            font-size: 22px;
             font-weight: bold;
-            z-index: 100;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        /* Espaço para não ficar atrás do cabeçalho */
-        .spacer {
-            height: 80px;
-        }
-
-        /* DASHBOARD (mobile first) */
         .dashboard {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
+            max-width: 1100px;
+            margin: auto;
             padding: 20px;
         }
 
-        /* CARD GRANDE */
         .card {
-           background: white;
-            padding: 18px;
+            background: white;
             border-radius: 18px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 25px;
+            margin-bottom: 35px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
         }
 
-        .card h2 {
-            margin-top: 0;
-            font-size: 22px;
+        h2 {
             text-align: center;
-            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
         }
 
-        iframe {
-            width: 100%;
-            height: 350px;
-            border: none;
-            border-radius: 12px;
-        }
-
-        /* TELAS GRANDES (tablet/PC) */
-        @media (min-width: 900px) {
-            .dashboard {
-                max-width: 1100px;
-                margin: auto;
-            }
-
-            .card iframe {
-                height: 400px;
+        @media (max-width: 600px) {
+            .card {
+                padding: 15px;
             }
         }
     </style>
 </head>
 <body>
 
-<header>
-    Horta Inteligente – Dashboard
-</header>
-
-<div class="spacer"></div>
+<header>Horta Inteligente – Dashboard</header>
 
 <div class="dashboard">
 
-    <!-- TEMPERATURA -->
     <div class="card">
         <h2>Temperatura Ambiente</h2>
-        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1587001746&format=interactive"></iframe>
+        <div id="temp_chart" style="width: 100%; height: 350px;"></div>
     </div>
 
-    <!-- UMIDADE -->
     <div class="card">
         <h2>Umidade do Solo</h2>
-        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1798809069&format=interactive"></iframe>
+        <div id="umid_chart" style="width: 100%; height: 350px;"></div>
     </div>
 
-    <!-- LDR -->
     <div class="card">
-        <h2>Luz Ambiente (LDR)</h2>
-        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS0mQVMtl99_QZzq-DpX4kDEz4vu35niLy5Yj3PDwVB3CMB2mc0R78S7LkXE-Oh7_rJwGmohGdaD_k_/pubchart?oid=1324451117&format=interactive"></iframe>
+        <h2>LDR (Luminosidade)</h2>
+        <div id="ldr_chart" style="width: 100%; height: 350px;"></div>
     </div>
 
 </div>
+
+<script>
+// === ID da Sua Planilha ===
+const sheetID = "11eUrf6mdpcyYNuBGWYTiusNMW44qyvnCZ88HSZjWa6M";
+
+// Carregar Google Charts
+google.charts.load("current", { packages: ["corechart"] });
+google.charts.setOnLoadCallback(updateCharts);
+
+// Função para consultar dados no Google Sheets
+function querySheet(query, callback) {
+    let url =
+        `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&tq=${encodeURIComponent(query)}`;
+
+    fetch(url)
+        .then(res => res.text())
+        .then(text => {
+            const json = JSON.parse(text.substring(47, text.length - 2));
+            const table = new google.visualization.DataTable(json.table);
+            callback(table);
+        })
+        .catch(err => console.error("Erro carregando dados:", err));
+}
+
+// Atualizar os 3 gráficos
+function updateCharts() {
+
+    // Temperatura (colunas A,B)
+    querySheet("select A,B", table => {
+        const chart = new google.visualization.LineChart(document.getElementById("temp_chart"));
+        chart.draw(table, {
+            curveType: "function",
+            legend: "none",
+            chartArea: { width: "85%", height: "70%" }
+        });
+    });
+
+    // Umidade do Solo (colunas A,D)
+    querySheet("select A,D", table => {
+        const chart = new google.visualization.LineChart(document.getElementById("umid_chart"));
+        chart.draw(table, {
+            curveType: "function",
+            legend: "none",
+            chartArea: { width: "85%", height: "70%" }
+        });
+    });
+
+    // LDR (colunas A,C)
+    querySheet("select A,C", table => {
+        const chart = new google.visualization.LineChart(document.getElementById("ldr_chart"));
+        chart.draw(table, {
+            curveType: "function",
+            legend: "none",
+            chartArea: { width: "85%", height: "70%" }
+        });
+    });
+}
+
+// Atualiza suavemente a cada 5s
+setInterval(updateCharts, 5000);
+</script>
 
 </body>
 </html>
